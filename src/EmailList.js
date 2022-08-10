@@ -13,7 +13,38 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import InboxIcon from "@mui/icons-material/Inbox";
 import Section from "./Section";
 import EmailRow from "./EmailRow";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "./firebase";
+
 function EmailList() {
+  const [emails, setEmails] = React.useState([]);
+  console.log("emails state", emails);
+  React.useEffect(() => {
+    const q = query(collection(db, "emails"), orderBy("timestamp", "desc"));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const EMAILS = [];
+      querySnapshot.forEach((doc) => {
+        EMAILS.push({ id: doc.id, data: doc.data() });
+        // setEmails((prevEmail) => [
+        //   ...prevEmail,
+        //   { id: doc.id, data: doc.data() },
+        // ]);
+        setEmails([...EMAILS]);
+      });
+
+      console.log("emails in useEffect", EMAILS);
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
     <div className="emailList">
       <div className="emailList__settings">
@@ -50,24 +81,18 @@ function EmailList() {
         <Section Icon={LocalOfferIcon} title="Promotions" color="green" />
       </div>
       <div className="emailList__list">
-        <EmailRow
-          title="Twitch"
-          subject={"Hey Web developer"}
-          description="this is a test description"
-          time="10pm"
-        />
-        <EmailRow
-          title="Twitch"
-          subject={"Hey Web developer"}
-          description="this is a test description"
-          time="10pm"
-        />
-        <EmailRow
-          title="Twitch"
-          subject={"Hey Web developer"}
-          description="this is a test description this is a test description this is a test description"
-          time="10pm"
-        />
+        {emails?.map(
+          ({ id, data: { message, to, timestamp, subject } }, index) => (
+            <EmailRow
+              id={index}
+              key={index}
+              title={to}
+              subject={subject}
+              description={message}
+              time={new Date(timestamp?.seconds * 1000).toUTCString()}
+            />
+          )
+        )}
       </div>
     </div>
   );
